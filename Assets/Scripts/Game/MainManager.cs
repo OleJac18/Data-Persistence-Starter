@@ -6,72 +6,25 @@ using UnityEngine.UI;
 
 public class MainManager : MonoBehaviour
 {
-    [System.Serializable]
-    class SaveData
-    {
-        public String playerName;
-        public int score;
-    }
-
-    public void SaveBestPlayer()
-    {
-        SaveData data = new SaveData();
-        data.playerName = playerName;
-        data.score = score;
-
-        string json = JsonUtility.ToJson(data);
-
-        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
-    }
-
-    public void LoadBestPlayer()
-    {
-        string path = Application.persistentDataPath + "/savefile.json";
-        if (File.Exists(path))
-        {
-            string json = File.ReadAllText(path);
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
-
-            playerName = data.playerName;
-            score = data.score;
-        }
-    }
-
-    public static MainManager Instance;
-
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
-
-    public String playerName;
-    public int score;
 
     private bool m_Started = false;
     private int m_Points;
 
     private bool m_GameOver = false;
 
-    private void Awake()
-    {
-        // start of new code
-        if (Instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        LoadBestPlayer();
-    }
 
     // Start is called before the first frame update
     void Start()
     {
+        HighScoreText.text = "Best Score: " + GameManager.Instance.highScorePlayerName + ": " + GameManager.Instance.highScore;
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
 
@@ -116,11 +69,22 @@ public class MainManager : MonoBehaviour
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+        CheckHighScore();
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        GameManager.Instance.SaveBestPlayer();
+    }
+
+    private void CheckHighScore()
+    {
+        if (m_Points > GameManager.Instance.highScore)
+        {
+            GameManager.Instance.highScore = m_Points;
+            GameManager.Instance.highScorePlayerName = GameManager.Instance.currentPlayerName;
+        }
     }
 }
